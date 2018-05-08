@@ -10,8 +10,8 @@ from geometry_msgs.msg import PoseWithCovarianceStamped, Pose, PoseArray
 def euler_to_quaternion(euler):
     """Convert Euler Angles to Quaternion
 
-    euler: geometry_msgs/Vector3
-    quaternion: geometry_msgs/Quaternion
+    :param euler: geometry_msgs/Vector3
+    :return quaternion: geometry_msgs/Quaternion
     """
     q = tf.transformations.quaternion_from_euler(euler[0], euler[1], euler[2])
     return Quaternion(x=q[0], y=q[1], z=q[2], w=q[3])
@@ -29,11 +29,21 @@ def get_param_if_exists(param_name, default_val):
     if rospy.has_param(param_name):
         return rospy.get_param(param_name)
     else:
-        rospy.logwarn(param_name + " was not specified at parameter. Using default.")
+        rospy.logwarn(param_name +
+                      " was not specified at parameter. Using default.")
         return default_val
 
 
-def pack_location_PoseWithCovarianceStamped(localizer, stamp=None, frame_id="/world"):
+def pack_location_PoseWithCovarianceStamped(localizer, \
+                                            stamp=None, frame_id="/world"):
+    """ compose PoseWithCovarianceStamped from ekf_localizar(in private repo)
+
+    :param localizer: instance of RobotEKFLocalizer
+    :param stamp: ROS timestamp to set in packed message header
+    :param frame_id: frame_id to set in packed message header
+    :return location: PoseWithCovarianceStamped message with given data
+    """
+
     location = PoseWithCovarianceStamped()
     if stamp is None:
         stamp = rospy.Time.now()
@@ -41,14 +51,24 @@ def pack_location_PoseWithCovarianceStamped(localizer, stamp=None, frame_id="/wo
     location.header.frame_id = frame_id
     location.pose.pose.position.x = localizer.x[0].copy()
     location.pose.pose.position.y = localizer.x[1].copy()
-    location.pose.pose.orientation = euler_to_quaternion([0, 0, localizer.x[2].copy()])
+    location.pose.pose.orientation = \
+        euler_to_quaternion([0, 0, localizer.x[2].copy()])
     if hasattr(localizer, "P"):
-        location.pose.covariance = convertCovariance2Dto3D(localizer.P).flatten("F")
+        location.pose.covariance = \
+            convertCovariance2Dto3D(localizer.P).flatten("F")
 
     return location
 
 
 def pack_location_PoseArray(particles, stamp=None, frame_id="/world"):
+    """ compose PoseArray from pf_localizar(in private repo)
+
+    :param particles: instance of RobotPFLocalizer.Particles
+    :param stamp: ROS timestamp to set in packed message header
+    :param frame_id: frame_id to set in packed message header
+    :return location: PoseArray message with given data
+    """
+
     location_array = PoseArray()
     if stamp is None:
         stamp = rospy.Time.now()
@@ -67,8 +87,11 @@ def pack_location_PoseArray(particles, stamp=None, frame_id="/world"):
 def convertCovariance2Dto3D(covariance2d):
     """ convert the covariance from [x, y, theta] to [x, y, z, roll, pitch, yaw]
 
-    :param covariance2d: covariance matrix in 3x3 format. each row and column corresponds to [x, y, theta]
-    :return: covariance matrix in 6x6 format. each row and column corresponds to [x, y, z, roll, pitch, yaw], where z, roll and pitch values are padded with 0.
+    :param covariance2d: covariance matrix in 3x3 format.
+                         each row and column corresponds to [x, y, theta]
+    :return: covariance matrix in 6x6 format. each row and column corresponds to
+             [x, y, z, roll, pitch, yaw],
+             where z, roll and pitch values are padded with 0.
     """
 
     covariance3d = np.zeros([6, 6])
