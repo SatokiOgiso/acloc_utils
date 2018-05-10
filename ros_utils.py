@@ -17,24 +17,7 @@ def euler_to_quaternion(euler):
     return Quaternion(x=q[0], y=q[1], z=q[2], w=q[3])
 
 
-def get_param_if_exists(param_name, default_val):
-    """ get a param from the parameter server if the specified parameter exists.
-        if not, the default value will be returned
-
-    :param param_name: parameter name to be loaded. String
-    :param default_val: default value for the parameter.
-    :return: gotten parameter if the parameter exists, default_val if not.
-    """
-
-    if rospy.has_param(param_name):
-        return rospy.get_param(param_name)
-    else:
-        rospy.logwarn(param_name +
-                      " was not specified at parameter. Using default.")
-        return default_val
-
-
-def pack_location_PoseWithCovarianceStamped(localizer, \
+def pack_location_PoseWithCovarianceStamped(localizer,
                                             stamp=None, frame_id="/world"):
     """ compose PoseWithCovarianceStamped from ekf_localizar(in private repo)
 
